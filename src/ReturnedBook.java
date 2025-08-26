@@ -15,6 +15,7 @@ public class ReturnedBook extends Book {
 	private String borrowDate;
 	private String returnDate;
 	private double fees;
+    private String plannedReturnDate;
 	
 	// Constructor
     public ReturnedBook(String isbn) {
@@ -38,6 +39,15 @@ public class ReturnedBook extends Book {
     	return "Late Fee: RM " + String.format("%.2f", fees);
     }
 
+    public String getPlannedReturnDate() {
+        return plannedReturnDate;
+    }
+
+    public void setPlannedReturnDate(String plannedReturnDate) {
+        this.plannedReturnDate = plannedReturnDate;
+    }
+
+
     // Setters
     public void setBorrowerId(String borrowerId) { 
     	this.borrowerId = borrowerId; 
@@ -57,30 +67,28 @@ public class ReturnedBook extends Book {
 
     // Method for calculate the late fee for return book
     public void calculateLateFee() {
-        if (borrowDate == null || returnDate == null) {
+        if (plannedReturnDate == null) {
             setFees(0.0);
+            return;
         }
 
         try {
-            // Convert to LocalDate
-            LocalDate borrow = LocalDate.parse(borrowDate);
-            LocalDate returned = LocalDate.parse(returnDate);
+            LocalDate dueDate = LocalDate.parse(plannedReturnDate);
+            LocalDate today = LocalDate.now();  // actual return date
 
-            // Assume loan period = 14 days
-            LocalDate dueDate = borrow.plusDays(14);
+            if (today.isAfter(dueDate)) {
+                long daysLate = ChronoUnit.DAYS.between(dueDate, today);
 
-            if (returned.isAfter(dueDate)) {
-                long daysLate = ChronoUnit.DAYS.between(dueDate, returned);
-
-                // RM5 per 10 days late
-                long feeUnits = (daysLate + 9) / 10;  // increase every 10 days
-                setFees(feeUnits * 5.0);
+                // RM 0.5 per 1 days late
+                long feeUnits = daysLate;  
+                setFees(feeUnits * 0.5);
+            } else {
+                setFees(0.0);
             }
         } catch (Exception e) {
             e.printStackTrace();
+            setFees(0.0);
         }
-
-        setFees(0.0);
     }
     
     // Override method for add the book and borrower data to returnedBook table in database (return & create)
@@ -120,13 +128,13 @@ public class ReturnedBook extends Book {
             insertStatement.setString(3, borrowDate);
             insertStatement.executeUpdate();
             
-            // Delete the data of book that have been returned from the returnedBook table in database 
+            // Delete the data of book that have been returned from the borrowedBook table in database 
             String deleteSql = "DELETE FROM borrowedBook WHERE isbn = ?";
             deleteStatement = connection.prepareStatement(deleteSql);
             deleteStatement.setString(1, getIsbn());
             deleteStatement.executeUpdate();
             
-            // Update status into available in the returnBook table in database
+            // Update status into available in the book table in database
             String updateSql = "UPDATE book SET status = 'available' WHERE isbn = ?";
             updateStatement = connection.prepareStatement(updateSql);
             updateStatement.setString(1, getIsbn());
@@ -193,4 +201,39 @@ public class ReturnedBook extends Book {
         }
         return returnedBooks;
 	}
+
+    // Method to get borrow & return date from borrowedBook database (search)
+    protected boolean loadBorrowAndReturnDatesFromBorrowedBook() {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet rs = null;
+
+        try {
+            connection = DriverManager.getConnection(jdbcUrl, username, password);
+            String sql = "SELECT borrow_date, return_date FROM borrowedBook WHERE isbn = ?";
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, getIsbn().toUpperCase());
+            rs = preparedStatement.executeQuery();
+
+            if (rs.next()) {
+                this.borrowDate = rs.getString("borrow_date");
+                this.plannedReturnDate = rs.getString("return_date");
+
+                // calculate fee after retrieving
+                calculateLateFee();
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (preparedStatement != null) preparedStatement.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
 }

@@ -630,9 +630,15 @@ public class App extends Application {
         searchReturnButton.setOnAction(e->{
         	// Object for the returnedBook class
         	ReturnedBook returnedBook = new ReturnedBook(isbnTextField.getText());
-        	feeLabel.setText(returnedBook.getFees());
-        	feeLabel.setVisible(true);
-        	returnButton.setVisible(true);
+            if (returnedBook.loadBorrowAndReturnDatesFromBorrowedBook()) {
+                feeLabel.setText(returnedBook.getFees());
+                feeLabel.setVisible(true);
+                returnButton.setVisible(true);
+            } else {
+                feeLabel.setText("Book not found in borrowedBook.");
+                feeLabel.setVisible(true);
+                returnButton.setVisible(false);
+            }
         });
         
         // Return a book
