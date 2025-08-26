@@ -47,7 +47,6 @@ public class ReturnedBook extends Book {
         this.plannedReturnDate = plannedReturnDate;
     }
 
-
     // Setters
     public void setBorrowerId(String borrowerId) { 
     	this.borrowerId = borrowerId; 
