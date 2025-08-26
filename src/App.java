@@ -7,12 +7,18 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.paint.Color;
 import javafx.scene.text.*;
 import java.time.LocalDate;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.File;
+import java.nio.file.Files;
+import java.io.IOException;
 import java.sql.*;
 
 // Main class for library management system
@@ -52,7 +58,8 @@ public class App extends Application {
 		returnHint.setTextFill(Color.RED);
 		borrowHint.setTextFill(Color.RED);
 		registerHint.setTextFill(Color.RED);
-        Image logo = new Image("file:images/logo.png");
+        File savedIcon = new File("images/logo.png");
+        Image logo = new Image(savedIcon.exists() ? savedIcon.toURI().toString() : "file:images/default_logo.png");
         ImageView logoView = new ImageView(logo);
         logoView.setFitHeight(50);
         logoView.setFitWidth(50);
@@ -254,7 +261,7 @@ public class App extends Application {
         // GUI for check borrower history page
 		TextField searchUserHistoryField = new TextField();
         searchUserHistoryField.setPromptText("Search for user...");
-        Button searchUserHistoryButton = new Button("Search");
+        Button searchUserHistoryButton = new Button("Search");        
         HBox searchUserHistoryBox = new HBox(10, searchUserHistoryField, searchUserHistoryButton);
         searchUserHistoryBox.setPadding(new Insets(10));
         searchUserHistoryBox.setAlignment(Pos.CENTER);
@@ -340,6 +347,38 @@ public class App extends Application {
         });
         
         // Button
+        // Make image clickable and upload the icon image
+        logoView.setOnMouseClicked(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Choose Logo Image");
+            fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg")
+            );
+
+            File file = fileChooser.showOpenDialog(toolBar.getScene().getWindow());
+            if (file != null) {
+                try {
+                    // Ensure images folder exists
+                    Path targetDir = Paths.get("images");
+                    if (!Files.exists(targetDir)) {
+                        Files.createDirectories(targetDir);
+                    }
+
+                    // Save as logo.png and overwrite old one
+                    Path targetFile = targetDir.resolve("logo.png");
+                    Files.copy(file.toPath(), targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+                    // Reload logo
+                    Image newLogo = new Image(targetFile.toUri().toString());
+                    logoView.setImage(newLogo);
+
+                    System.out.println("Logo updated!");
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
         // Register Page
         // Navigate to register page
         registerButton.setOnAction(e->{
