@@ -54,6 +54,7 @@ public class App extends Application {
         title.setFont(Font.font("Arial", FontWeight.BOLD, 20));
         title.setTextFill(Color.PURPLE);
         checkUserLabel.setTextFill(Color.BLUE);
+        checkUserHistoryLabel.setTextFill(Color.BLUE);
         bookHint.setTextFill(Color.RED);
 		returnHint.setTextFill(Color.RED);
 		borrowHint.setTextFill(Color.RED);
@@ -338,11 +339,11 @@ public class App extends Application {
 
         // Borrow & return date in picker
         borrowPicker.setValue(LocalDate.now());
-        returnPicker.setValue(LocalDate.now().plusDays(20));
+        returnPicker.setValue(LocalDate.now().plusDays(14));
         
         borrowPicker.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
-                returnPicker.setValue(newValue.plusDays(20));
+                returnPicker.setValue(newValue.plusDays(14));
             }
         });
         
@@ -438,6 +439,7 @@ public class App extends Application {
 	        	borrowHint.setText("");
 	        	returnHint.setText("");
                 registerHint.setText("");
+                checkUserHistoryLabel.setText("");
 	        	checkUserLabel.setText("");	        	
 	        	searchBookField.setText("");
 	        	registerButton.setVisible(true);
@@ -719,6 +721,9 @@ public class App extends Application {
         
         // Search borrower history
         searchUserHistoryButton.setOnAction(e->{
+            // Object for the user class
+        	User info = User.retrieveUserInfo(searchUserHistoryField.getText().toUpperCase());
+            checkUserHistoryLabel.setText("Name:   " + info.getUserName() + "                   User ID:   " + info.getUserId().toUpperCase());
         	returnedBookData.setAll(ReturnedBook.History(searchUserHistoryField.getText().toUpperCase()));
         	returnedBookTableView.setVisible(true);
         });
